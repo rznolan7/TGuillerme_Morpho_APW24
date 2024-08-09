@@ -187,7 +187,8 @@ my_ordination <- prcomp(continuous_data)
 ## Getting the trait space
 my_traitspace <- my_ordination$x
 ## Measuring the "loading" (the variance per dimension)
-my_loadings <- apply(my_traitspace, 2, var)/sum(apply(my_traitspace, 2, var))
+my_loadings <- apply(my_traitspace, 2, var)/sum(apply(my_traitspace, 2, var)) #this calculates the variance in each column and then divides it by the sum of all the variance values in all columns. this is used as 'percentage of variance explained in each dimension'
+print(c(my_loadings[1], my_loadings[2], my_loadings[3]))
 ```
 
 Alternatively you can calculate the loadings by using the `$sdev` component that is the square root of the eigenvalues (so the loadings are the scaled squared `$sdev` component) but personally I prefer calculating it using the variance (I find it easier to understand).
@@ -220,8 +221,10 @@ This is a dataset from @beck2014ancient of 106 mammal species (mainly fossils) a
 ## 421 discrete morphological characters
 discrete_traits <- read.nexus.data("../examples/discrete_characters/Beck2014.nex")
 ## Combine the output list into a matrix (rows are species and columns are characters)
-traits_matrix <- do.call(rbind, discrete_traits)
+traits_matrix <- do.call(rbind, discrete_traits) #do.call is similar to apply, in this case it applies rbind to discrete_traits to make a matrix
 ```
+
+There is one issue - the first step in calculating a PCA is centering the matrix, but you can't center when there's non-numeric values (?, 0/3, etc) what do we do? We need to make a distance matrix that has continuous values for each column.
 
 </div>
 
@@ -255,10 +258,10 @@ You can personalise the way you want to interpret these characters by giving a d
 ## Calculating the maximum observable distance
 distance_matrix2 <- char.diff(traits_matrix, method = "mord", by.col = FALSE,
                               # defining the special token and it's name
-                              special.tokens = c("missing" = "\\?"),
+                              special.tokens = c("missing" = "\\?"), #\\ means "exactly this chacarter"
                               # defining the behaviour (always returning 1, the first state)
                               special.behaviour = list(missing = function(x,y) return(1))
-                              )
+                              ) #in this example, return(1) makes every iffy answer the same as the first state, which in this case is 0, probably not actually a good idea
 ```
 
 This change results in a very different distance matrix (and is probably not very pertinent for this specific dataset!).
@@ -311,9 +314,9 @@ Regarding the correction, if you don't use a simple Euclidean distance metric, u
 ```{r}
 ## Ordinating a distance matrix
 my_pco <- cmdscale(distance_matrix,
-                   # the number of dimensions
+                   # the number of dimensions, you remove the last one b/c it is ==0
                    k = ncol(distance_matrix)-2,
-                   # the Cailliez correction
+                   # the Cailliez correction, remove negative distances by adding a constant value across matrix
                    add = TRUE)
 
 ## Getting just the coordinates
@@ -332,6 +335,7 @@ plot(my_traitspace[, c(1,2)],
 barplot(my_loadings, ylab = "% variance")
 par(op)
 ```
+In this case, its important to note that the first two coordinates only represent 5% of the variance - terrible for interpretation!
 
 <!--
 ## Missing data 
